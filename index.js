@@ -1,5 +1,4 @@
 const { Member } = require('@ellementul/uee-core')
-const { Time } = require('@ellementul/timecount')
 
 const startEvent = require('./events/start_event')
 const timeEvent = require('./events/time_event')
@@ -7,19 +6,17 @@ class Ticker extends Member {
   constructor() {
     super()
 
-    this.onEvent(startEvent, () => this.start())
-    this._timemark = new Time
+    this.onEvent(startEvent, payload => this.start(payload))
     this._timeout = 200
     
     this.role = "Ticker"
   }
-  start () {
+  start ({ delta }) {
     this._timer = setInterval(() => this.send(timeEvent, {
       state: {
-        timemark: this._timemark.toArray(),
         mstime: Date.now()
       }
-    }), this._timeout)
+    }), delta || this._timeout)
   }
   reset () {
     clearInterval(this._timer)
