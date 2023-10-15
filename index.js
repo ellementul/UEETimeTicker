@@ -1,7 +1,8 @@
-const { Member } = require('@ellementul/uee-core')
+import { Member } from '@ellementul/uee-core'
 
-const startEvent = require('./events/start_event')
-const timeEvent = require('./events/time_event')
+import startEvent from './events/start_event.js'
+import timeEvent from './events/time_event.js'
+
 class Ticker extends Member {
   constructor() {
     super()
@@ -23,10 +24,13 @@ class Ticker extends Member {
   }
 }
 
-module.exports = { 
-  Ticker,
-  events: {
-    start: require('./events/start_event'),
-    time: require('./events/time_event')
-  }
+const events = {
+  startEvent,
+  start: startEvent,
+  timeEvent,
+  time: timeEvent
 }
+
+Ticker.events = events
+
+export { Ticker, events }

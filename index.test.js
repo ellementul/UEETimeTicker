@@ -1,68 +1,72 @@
-const { Provider } = require('@ellementul/uee-core')
-const { Ticker } = require('./index')
+import test from 'ava'
+import sinon from 'sinon'
 
-describe('Ticker', () => {
-  test('constructor', () => {
-    const ticker = new Ticker
-    expect(ticker).toBeDefined();
-  });
-  test('run ticker', () => {
-    jest.useFakeTimers();
+import { Provider } from '@ellementul/uee-core'
+import { Ticker, events } from './index.js'
 
-    const provider = new Provider
-    const ticker = new Ticker
-    ticker.setProvider(provider)
+import startEvent from './events/start_event.js'
+import timeEvent from './events/time_event.js'
 
-    const timeEvent = require('./events/time_event')
-    const timeCallback = jest.fn()
-    provider.onEvent(timeEvent, timeCallback)
+test('constructor', t => {
+  const ticker = new Ticker
+  t.truthy(ticker)
+})
 
-    const startEvent = require('./events/start_event')
-    provider.sendEvent(startEvent.create())
+test('testing export events', t => {
+  t.is(startEvent, Ticker.events.start)
+  t.is(timeEvent, Ticker.events.time)
+  t.is(startEvent, Ticker.events.startEvent)
+  t.is(timeEvent, Ticker.events.timeEvent)
+})
 
-    jest.runOnlyPendingTimers();
+const clock = sinon.useFakeTimers()
 
-    expect(timeCallback).toHaveBeenCalled();
-  });
-  test('run ticker with delta', () => {
-    jest.useFakeTimers();
+test('run ticker', t => {
+  const provider = new Provider
+  const ticker = new Ticker
+  ticker.setProvider(provider)
 
-    const provider = new Provider
-    const ticker = new Ticker
-    ticker.setProvider(provider)
+  const timeCallback = sinon.fake()
+  provider.onEvent(timeEvent, timeCallback)
+  provider.sendEvent(startEvent.create())
 
-    const timeEvent = require('./events/time_event')
-    const timeCallback = jest.fn()
-    provider.onEvent(timeEvent, timeCallback)
+  clock.tick(1000)
 
-    const startEvent = require('./events/start_event')
-    provider.sendEvent({
-      ...startEvent.create(),
-      delta: 24
-    })
+  t.true(timeCallback.called)
+})
 
-    jest.runOnlyPendingTimers();
+test('run ticker with delta', t => {
 
-    expect(timeCallback).toHaveBeenCalled();
-  });
-  test('reset ticker', () => {
-    jest.useFakeTimers();
+  const provider = new Provider
+  const ticker = new Ticker
+  ticker.setProvider(provider)
 
-    const provider = new Provider
-    const ticker = new Ticker
-    ticker.setProvider(provider)
+  const timeCallback = sinon.fake()
+  provider.onEvent(timeEvent, timeCallback)
 
-    const timeEvent = require('./events/time_event')
-    const timeCallback = jest.fn(() => {
-      ticker.reset()
-    })
-    provider.onEvent(timeEvent, timeCallback)
+  provider.sendEvent({
+    ...startEvent.create(),
+    delta: 24
+  })
 
-    const startEvent = require('./events/start_event')
-    provider.sendEvent(startEvent.create())
+  clock.tick(24*3)
 
-    jest.runOnlyPendingTimers();
+  t.true(timeCallback.calledThrice)
+})
 
-    expect(timeCallback).toHaveBeenCalledTimes(1);
-  });
+test('reset ticker', t => {
+  const provider = new Provider
+  const ticker = new Ticker
+  ticker.setProvider(provider)
+
+  const timeCallback = sinon.spy(() => {
+    ticker.reset()
+  })
+  provider.onEvent(timeEvent, timeCallback)
+
+  provider.sendEvent(startEvent.create())
+
+  clock.tick(3000)
+
+  t.true(timeCallback.calledOnce)
 });
